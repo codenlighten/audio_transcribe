@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require("uuid");
 const app = express();
 const port = process.env.PORT || 3000;
 // mongodb
-const mongoUri = process.env.MONGODB_URI;
+const mongoUri = process.env.MONGO_URI;
 const db = "audio-transcription";
 const MongoClient = require("mongodb").MongoClient;
 const client = new MongoClient(mongoUri, {
@@ -13,9 +13,11 @@ const client = new MongoClient(mongoUri, {
 });
 // Connect to the db
 client.connect((err) => {
-  const collection = client.db(db).collection("audio-transcription");
-  // perform actions on the collection object
-  client.close();
+  if (err) {
+    console.log(err);
+  } else {
+    console.log("Connected to db");
+  }
 });
 //save transcription to db
 const saveTranscription = (transcription) => {
