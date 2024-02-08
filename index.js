@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require("uuid");
 const { MongoClient } = require("mongodb");
 const http = require("http");
 const { Server } = require("socket.io");
-
+const CryptoJS = require("crypto-js");
 const app = express();
 const port = process.env.PORT || 3000;
 const mongoUri = process.env.MONGO_URI;
@@ -32,6 +32,19 @@ async function connectToDatabase() {
     console.error("Failed to connect to MongoDB:", error);
   }
 }
+const encrypt = (text) => {
+  return CryptoJS.AES.encrypt(text, process.env.ENCRYPT_KEY).toString();
+};
+const decrypt = (text) => {
+  const bytes = CryptoJS.AES.decrypt(text, process.env.ENCRYPT_KEY);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};
+const randomId = () => {
+  const id = uuidv4();
+  console.log("id", id);
+  return encrypt(id);
+};
+// randomId();
 
 async function saveTranscription(transcription) {
   try {
@@ -52,6 +65,15 @@ async function getTranscriptions() {
     const transcriptions = await collection
       .find({ transcription: { $ne: "" } })
       .toArray();
+    //   if encrypted is true, decrypt the transcription
+    transcriptions.map((transcription) => {
+      if (transcription.encrypted) {
+        return {
+          ...transcription,
+          transcription: decrypt,
+        };
+      }
+    });
     console.log("Transcriptions retrieved:", transcriptions);
     return transcriptions;
   } catch (error) {
@@ -102,11 +124,13 @@ app.post("/api/transcription", async (req, res) => {
   if (transcription.length === 0) {
     return res.json({ message: "No transcription to save" });
   }
+  const encryptedTranscription = encrypt(transcription);
   const newTranscription = {
     timestamp,
-    transcription,
+    transcription: encryptedTranscription,
     id,
     sessionName,
+    encrypted: true,
   };
   currentTranscriptions.push(newTranscription);
   await saveTranscription(newTranscription);
