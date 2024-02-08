@@ -2,6 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const { MongoClient } = require("mongodb");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -12,6 +14,9 @@ const dbName = "audio-transcription";
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
+
+// Create HTTP server
+const server = http.createServer(app);
 
 // Connect to MongoDB
 const client = new MongoClient(mongoUri, {
@@ -54,121 +59,11 @@ async function getTranscriptions() {
     return [];
   }
 }
-
-const getTranscriptionById = async (id) => {
-  try {
-    const db = client.db(dbName);
-    const collection = db.collection("transcriptions");
-    const transcription = await collection.findOne({
-      id,
-    });
-    console.log("Transcription retrieved:", transcription);
-    return transcription;
-  } catch (error) {
-    console.error("Failed to get transcription:", error);
-    return null;
-  }
-};
-
-const getTranscriptionBySessionId = async (sessionId) => {
-  try {
-    const db = client.db(dbName);
-    const collection = db.collection("transcriptions");
-    const transcription = await collection.findOne({
-      sessionId,
-    });
-    console.log("Transcription retrieved:", transcription);
-    return transcription;
-  } catch (error) {
-    console.error("Failed to get transcription:", error);
-    return null;
-  }
-};
-
-// <!DOCTYPE html>
-// <html lang="en">
-//   <head>
-//     <meta charset="UTF-8" />
-//     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-//     <title>Document</title>
-//     <style>
-//       body {
-//         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-//         text-align: center;
-//       }
-//       h1 {
-//         color: #333;
-//       }
-//       .transcription {
-//         margin: 20px auto;
-//         padding: 20px;
-//         font-size: 16px;
-//         border: 1px solid #ccc;
-//         width: 80%;
-//         min-height: 100px;
-//         overflow-wrap: break-word;
-//       }
-//     </style>
-//   </head>
-//   <body>
-//     <h1>Audio Transcribe</h1>
-//     <div id="transcriptions">
-//       <h2>Previous Transcriptions</h2>
-//       <p class="transcription"></p>
-//     </div>
-//   </body>
-// </html>
-//turn each transcription into a html element and return as a html page
-app.get("/transcriptions", async (req, res) => {
-  const transcriptions = await getTranscriptions();
-  const transcriptionElements = transcriptions
-    .map((transcription) => `<p>${transcription.transcription}</p>`)
-    .join("");
-  const html = `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Document</title>
-        <style>
-          body {
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-          }
-          h1 {
-            color: #333;
-          }
-          .transcription {
-            margin: 20px auto;
-            padding: 20px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            width: 80%;
-            min-height: 100px;
-            overflow-wrap: break-word;
-          }
-        </style>
-      </head>
-      <body>
-        <h1>Audio Transcribe</h1>
-        <div id="transcriptions">
-          <h2>Previous Transcriptions</h2>
-          <div class="transcription">${transcriptionElements}</div>
-        </div>
-      </body>
-    </html>
-    `;
-  res.send(html);
-});
-
 // Routes
 app.post("/api/transcription", async (req, res) => {
-  const { timestamp, transcription, id, session } = req.body;
-  if (!timestamp || !transcription || !id || !session) {
-    return res
-      .status(400)
-      .json({ error: "Missing timestamp or transcription" });
+  const { timestamp, transcription, id, sessionName } = req.body;
+  if (!timestamp || !transcription || !id || !sessionName) {
+    return res.status(400).json({ error: "Missing required fields" });
   }
   if (typeof timestamp !== "number" || typeof transcription !== "string") {
     return res
@@ -176,17 +71,61 @@ app.post("/api/transcription", async (req, res) => {
       .json({ error: "Invalid timestamp or transcription" });
   }
   if (transcription.length === 0) {
-    return res.json(newTranscription);
+    return res.json({ message: "No transcription to save" });
   }
   const newTranscription = {
     timestamp,
     transcription,
     id,
-    sessionId: uuidv4(),
+    sessionName,
   };
   await saveTranscription(newTranscription);
+
+  // Emit the new transcription to all connected clients in the same session
+  io.to(sessionName).emit("newTranscription", newTranscription);
+
   return res.json(newTranscription);
 });
+
+// Socket.IO server
+const io = new Server(server);
+
+// Socket.IO logic
+io.on("connection", async (socket) => {
+  console.log("A user connected");
+
+  // Join a room based on the sessionName provided by the client
+  const { sessionName } = socket.handshake.query;
+  socket.join(sessionName);
+
+  // Send existing transcriptions for the session to the connected client
+  const transcriptions = await getTranscriptionsBySession(sessionName);
+  socket.emit("transcriptions", transcriptions);
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
+  });
+});
+
+// Function to fetch transcriptions by sessionName
+async function getTranscriptionsBySession(sessionName) {
+  try {
+    const db = client.db(dbName);
+    const collection = db.collection("transcriptions");
+    const transcriptions = await collection.find({ sessionName }).toArray();
+    console.log(
+      `Transcriptions for session ${sessionName} retrieved:`,
+      transcriptions
+    );
+    return transcriptions;
+  } catch (error) {
+    console.error(
+      `Failed to get transcriptions for session ${sessionName}:`,
+      error
+    );
+    return [];
+  }
+}
 
 app.get("/api/transcription", async (req, res) => {
   const transcriptions = await getTranscriptions();
@@ -214,7 +153,7 @@ app.get("/api/transcription/session/:sessionId", async (req, res) => {
 // Start the server
 async function startServer() {
   await connectToDatabase();
-  app.listen(port, () => {
+  server.listen(port, () => {
     console.log(`Server listening at http://localhost:${port}`);
   });
 }

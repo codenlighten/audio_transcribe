@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://unpkg.com/bsv@1.5"></script>
-
+    <!-- socketio -->
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
     <title>Audio Transcribe</title>
     <style>
       body {
@@ -53,6 +54,18 @@
       <h2>Previous Transcriptions</h2>
       <!-- button show  -->
       <button id="showTranscriptions">Show Transcriptions</button>
+    </div>
+    <div id="getLiveTranscriptions">
+      <h2>Live Transcriptions</h2>
+      <!-- enter Session Id -->
+      <input
+        type="text"
+        id="sessionId"
+        placeholder="Enter session
+        id"
+      />
+      <button id="getLiveTranscriptions">Get Live Transcriptions</button>
+      <div id="liveTranscriptions"></div>
     </div>
     <script>
       if (!localStorage.getItem("address")) {
@@ -218,6 +231,58 @@
             console.error("Error fetching transcriptions:", error);
           });
       }
+      // Create a Socket.IO client instance
+      const socket = io();
+
+      // Listen for transcriptions event from the server
+      socket.on("transcriptions", (transcriptions) => {
+        const liveTranscriptions =
+          document.getElementById("liveTranscriptions");
+        liveTranscriptions.innerHTML = ""; // Clear previous transcriptions
+        transcriptions.forEach((transcription) => {
+          const transcriptionDiv = document.createElement("div");
+          transcriptionDiv.innerText = `${new Date(
+            transcription.timestamp
+          ).toLocaleString()}: ${transcription.transcription}`;
+          liveTranscriptions.appendChild(transcriptionDiv);
+        });
+      });
+
+      // Function to fetch live transcriptions based on sessionId
+      function getLiveTranscriptions(sessionId) {
+        // Emit an event to the server to fetch live transcriptions for the provided sessionId
+        socket.emit("getLiveTranscriptions", sessionId);
+      }
+
+      // Function to handle the click event of the start button
+      document.getElementById("start").addEventListener("click", () => {
+        const sessionId = document.getElementById("sessionName").value;
+        // Call the function to get live transcriptions
+        getLiveTranscriptions(sessionId);
+      });
+
+      // Function to handle the click event of the stop button
+      document.getElementById("stop").addEventListener("click", () => {
+        // Clear the live transcriptions section
+        document.getElementById("liveTranscriptions").innerHTML = "";
+      });
+
+      // Function to handle the click event of the stopSave button
+      document.getElementById("stopSave").addEventListener("click", () => {
+        // Clear the live transcriptions section
+        document.getElementById("liveTranscriptions").innerHTML = "";
+        // Implement saving functionality if needed
+      });
+
+      // Event listener for the getLiveTranscriptions button
+      document
+        .getElementById("getLiveTranscriptions")
+        .addEventListener("click", () => {
+          // Get the session ID from the input field
+          const sessionId = document.getElementById("sessionId").value;
+          // Call the function to get live transcriptions
+          getLiveTranscriptions(sessionId);
+        });
     </script>
   </body>
 </html>
