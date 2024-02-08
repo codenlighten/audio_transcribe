@@ -44,6 +44,12 @@
     <!-- Transcription results -->
     <div id="transcription"></div>
     <!-- Save transcription locally -->
+    <!-- previous transcriptions -->
+    <div id="previousTranscriptions">
+      <h2>Previous Transcriptions</h2>
+      <!-- button show  -->
+      <button id="showTranscriptions">Show Transcriptions</button>
+    </div>
     <script>
       let currentDateTimestamp = new Date().getTime();
       let currentTranscription = "";
@@ -86,10 +92,23 @@
 
         // Handle the onresult event
         recognition.onresult = (event) => {
-          const current = event.resultIndex;
-          const transcript = event.results[current][0].transcript;
-          transcription.textContent += transcript;
-          currentTranscription += transcript;
+          let interimTranscription = "";
+          let finalTranscription = "";
+
+          // Loop through all the interim results
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscription += event.results[i][0].transcript;
+            } else {
+              interimTranscription += event.results[i][0].transcript;
+            }
+          }
+
+          // Update the current transcription with final results
+          currentTranscription += finalTranscription;
+          // Update the display with both interim and final results
+          transcription.textContent =
+            currentTranscription + interimTranscription;
         };
 
         recognition.onend = () => {
@@ -138,6 +157,44 @@
           currentTranscription = "";
         }
       }, 5000);
+
+      document
+        .getElementById("showTranscriptions")
+        .addEventListener("click", function () {
+          getTranscriptions(); // Fetch and display previous transcriptions
+        });
+
+      function getTranscriptions() {
+        fetch("/api/transcription")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Network response was not ok");
+            }
+            return response.json();
+          })
+          .then((data) => {
+            const previousTranscriptions = document.getElementById(
+              "previousTranscriptions"
+            );
+            // Clear previous transcriptions before appending new ones to avoid duplication
+            previousTranscriptions.innerHTML =
+              '<h2>Previous Transcriptions</h2><button id="showTranscriptions">Show Transcriptions</button>';
+
+            const transcriptions = document.createElement("div");
+            transcriptions.id = "transcriptions";
+            data.forEach((transcription) => {
+              const transcriptionDiv = document.createElement("div");
+              transcriptionDiv.innerText = `${new Date(
+                transcription.timestamp
+              ).toLocaleString()}: ${transcription.transcription}`;
+              transcriptions.appendChild(transcriptionDiv);
+            });
+            previousTranscriptions.appendChild(transcriptions);
+          })
+          .catch((error) => {
+            console.error("Error fetching transcriptions:", error);
+          });
+      }
     </script>
   </body>
 </html>

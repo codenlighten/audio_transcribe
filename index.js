@@ -21,6 +21,11 @@ app.post("/api/transcription", (req, res) => {
   res.json(newNote);
 });
 
+app.get("/api/transcription", (req, res) => {
+  const notes = JSON.parse(fs.readFileSync("db/db.json"));
+  res.json(notes);
+});
+
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });
