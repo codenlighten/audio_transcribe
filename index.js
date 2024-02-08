@@ -1,21 +1,49 @@
-const fs = require("fs");
+require("dotenv").config();
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const app = express();
 const port = process.env.PORT || 3000;
+// mongodb
+const mongoUri = process.env.MONGODB_URI;
+const db = "audio-transcription";
+const MongoClient = require("mongodb").MongoClient;
+const client = new MongoClient(mongoUri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+// Connect to the db
+client.connect((err) => {
+  const collection = client.db(db).collection("audio-transcription");
+  // perform actions on the collection object
+  client.close();
+});
+//save transcription to db
+const saveTranscription = (transcription) => {
+  //make sure collection exists
+  const collection = client.db(db).collection("audio-transcription");
+  collection.insertOne(transcription, (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log(result);
+    }
+  });
+};
+//get transcription from db
+const getTranscription = () => {
+  const collection = client.db(db).collection("audio-transcription");
+  collection.find({}).toArray((err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log(result);
+    }
+  });
+};
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public")); // Serve your static HTML file
-
-// Create a middleware to check if db.json exists, if not, create an empty array
-app.use((req, res, next) => {
-  const dbPath = "db/db.json";
-  if (!fs.existsSync(dbPath)) {
-    fs.writeFileSync(dbPath, "[]");
-  }
-  next();
-});
 
 app.post("/api/transcription", (req, res) => {
   const { timestamp, transcription } = req.body;
@@ -24,14 +52,12 @@ app.post("/api/transcription", (req, res) => {
     transcription,
     id: uuidv4(),
   };
-  const notes = JSON.parse(fs.readFileSync("db/db.json"));
-  notes.push(newNote);
-  fs.writeFileSync("db/db.json", JSON.stringify(notes));
+  saveTranscription(newNote);
   res.json(newNote);
 });
 
 app.get("/api/transcription", (req, res) => {
-  const notes = JSON.parse(fs.readFileSync("db/db.json"));
+  const notes = getTranscription();
   res.json(notes);
 });
 
