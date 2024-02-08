@@ -139,6 +139,12 @@ io.on("connection", (socket) => {
           currentTranscriptionsLength
         );
         currentTranscriptionsLength = currentTranscriptions.length;
+        if (newTranscriptions.encrypt) {
+          newTranscriptions.transcription = decrypt(
+            newTranscriptions.transcription
+          );
+          newTranscriptions.encrypted = false;
+        }
         socket.emit("liveTranscriptionUpdate", newTranscriptions);
       }
     }, 1000);
@@ -178,13 +184,7 @@ app.post("/api/transcription", async (req, res) => {
     sessionName,
     encrypted: true,
   };
-  currentTranscriptions.push({
-    timestamp,
-    transcription,
-    id,
-    sessionName,
-    encrypted: false,
-  });
+  currentTranscriptions.push(newTranscription);
   await saveTranscription(newTranscription);
 
   // Emit the update to all clients in the session
