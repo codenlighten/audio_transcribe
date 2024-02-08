@@ -99,14 +99,15 @@ io.on("connection", async (socket) => {
   console.log("A user connected");
 
   // Join a room based on the sessionName provided by the client
-  const { sessionName } = socket.handshake.query;
-  socket.join(sessionName);
+  const { sessionId } = socket.handshake.query;
+  socket.join(sessionId);
 
   // Send existing transcriptions for the session to the connected client
-  const transcriptions = transcriptions.filter(
-    (transcription) => transcription.sessionName === sessionName
+  const filteredTranscriptions = transcriptions.filter(
+    (transcription) => transcription.sessionName === sessionId
   );
-  const lastTranscription = transcriptions[transcriptions.length - 1];
+  const lastTranscription =
+    filteredTranscriptions[filteredTranscriptions.length - 1];
   socket.emit("transcriptions", lastTranscription);
 
   socket.on("disconnect", () => {
