@@ -275,6 +275,13 @@
         liveTranscriptions.innerHTML = ""; // Clear previous transcriptions
         liveTranscriptions.innerText = transcriptions;
       });
+      socket.on("transcriptionUpdate", (newTranscription) => {
+        // Update your UI with the new transcription
+        const liveTranscriptions =
+          document.getElementById("liveTranscriptions");
+        // Append or update the transcription in your UI
+        liveTranscriptions.innerHTML += `<div>${newTranscription.transcription}</div>`;
+      });
 
       // Function to fetch live transcriptions based on sessionId
       function getLiveTranscriptions(sessionId) {
