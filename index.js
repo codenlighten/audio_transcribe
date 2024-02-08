@@ -91,10 +91,7 @@ async function getTranscriptions() {
 app.get("/transcriptions", async (req, res) => {
   const transcriptions = await getTranscriptions();
   const transcriptionElements = transcriptions
-    .map(
-      (transcription) =>
-        `<p>${transcription.transcription}</p><p>Timestamp: ${transcription.timestamp}</p>`
-    )
+    .map((transcription) => `<p>${transcription.transcription}</p>`)
     .join("");
   const html = `
     <!DOCTYPE html>
