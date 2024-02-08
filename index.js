@@ -94,17 +94,17 @@ app.post("/api/transcription", async (req, res) => {
   return res.json(newTranscription);
 });
 
-app.get("/api/transcription", async (req, res) => {
-  res.json(currentTranscriptions);
+app.get("/api/transcription/session/:sessionId", async (req, res) => {
+  const { sessionId } = req.params;
+  const transcriptions = await getTranscriptionsBySession(sessionId);
+  res.json(transcriptions);
 });
 
 // Socket.IO server
 const io = new Server(server);
-
 // Socket.IO logic
 io.on("connection", async (socket) => {
   console.log("A user connected");
-
   // Join a room based on the sessionName provided by the client
   const { sessionId } = socket.handshake.query;
   socket.join(sessionId);
