@@ -54,6 +54,37 @@ async function getTranscriptions() {
     return [];
   }
 }
+
+const getTranscriptionById = async (id) => {
+  try {
+    const db = client.db(dbName);
+    const collection = db.collection("transcriptions");
+    const transcription = await collection.findOne({
+      id,
+    });
+    console.log("Transcription retrieved:", transcription);
+    return transcription;
+  } catch (error) {
+    console.error("Failed to get transcription:", error);
+    return null;
+  }
+};
+
+const getTranscriptionBySessionId = async (sessionId) => {
+  try {
+    const db = client.db(dbName);
+    const collection = db.collection("transcriptions");
+    const transcription = await collection.findOne({
+      sessionId,
+    });
+    console.log("Transcription retrieved:", transcription);
+    return transcription;
+  } catch (error) {
+    console.error("Failed to get transcription:", error);
+    return null;
+  }
+};
+
 // <!DOCTYPE html>
 // <html lang="en">
 //   <head>
@@ -133,8 +164,8 @@ app.get("/transcriptions", async (req, res) => {
 
 // Routes
 app.post("/api/transcription", async (req, res) => {
-  const { timestamp, transcription } = req.body;
-  if (!timestamp || !transcription) {
+  const { timestamp, transcription, id, session } = req.body;
+  if (!timestamp || !transcription || !id || !session) {
     return res
       .status(400)
       .json({ error: "Missing timestamp or transcription" });
@@ -150,7 +181,8 @@ app.post("/api/transcription", async (req, res) => {
   const newTranscription = {
     timestamp,
     transcription,
-    id: uuidv4(),
+    id,
+    sessionId: uuidv4(),
   };
   await saveTranscription(newTranscription);
   return res.json(newTranscription);
@@ -159,6 +191,24 @@ app.post("/api/transcription", async (req, res) => {
 app.get("/api/transcription", async (req, res) => {
   const transcriptions = await getTranscriptions();
   res.json(transcriptions);
+});
+
+app.get("/api/transcription/:id", async (req, res) => {
+  const { id } = req.params;
+  const transcription = await getTranscriptionById(id);
+  if (!transcription) {
+    return res.status(404).json({ error: "Transcription not found" });
+  }
+  res.json(transcription);
+});
+
+app.get("/api/transcription/session/:sessionId", async (req, res) => {
+  const { sessionId } = req.params;
+  const transcription = await getTranscriptionBySessionId(sessionId);
+  if (!transcription) {
+    return res.status(404).json({ error: "Transcription not found" });
+  }
+  res.json(transcription);
 });
 
 // Start the server

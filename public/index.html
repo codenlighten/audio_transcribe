@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/bsv@1.5"></script>
+
     <title>Audio Transcribe</title>
     <style>
       body {
@@ -38,6 +40,8 @@
   </head>
   <body>
     <h1>Audio Transcribe</h1>
+    <!-- name session -->
+    <input type="text" id="sessionName" placeholder="Enter session name" />
     <button id="start">Start</button>
     <button id="stop">Stop</button>
     <button id="stopSave">Stop & Save</button>
@@ -51,15 +55,32 @@
       <button id="showTranscriptions">Show Transcriptions</button>
     </div>
     <script>
+      if (!localStorage.getItem("address")) {
+        const privateKey = new bsv.PrivateKey.fromRandom();
+        const address = privateKey.toAddress().toString();
+        localStorage.setItem("address", address);
+        localStorage.setItem("privateKey", privateKey.toString());
+      }
+      let id = localStorage.getItem("address");
       let currentDateTimestamp = new Date().getTime();
       let currentTranscription = "";
+      let sessionName = document.getElementById("sessionName").value;
       const sendTranscription = (transcription) => {
+        if (transcription === "") {
+          return;
+        }
+        if (sessionName === "") {
+          const date = new Date();
+          sessionName = `Session-${date.toISOString()}`;
+        }
         fetch("/api/transcription", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            id: id,
+            sessionName: sessionName,
             transcription: transcription,
             timestamp: currentDateTimestamp,
           }),
