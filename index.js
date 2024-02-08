@@ -47,7 +47,6 @@ async function getTranscriptions() {
     const transcriptions = await collection
       .find({ transcription: { $ne: "" } })
       .toArray();
-
     console.log("Transcriptions retrieved:", transcriptions);
     return transcriptions;
   } catch (error) {
@@ -55,6 +54,30 @@ async function getTranscriptions() {
     return [];
   }
 }
+
+//turn each transcription into a html element and return as a html page
+app.get("/transcriptions", async (req, res) => {
+  const transcriptions = await getTranscriptions();
+  const transcriptionElements = transcriptions
+    .map(
+      (transcription) =>
+        `<p>${transcription.transcription}</p><p>Timestamp: ${transcription.timestamp}</p>`
+    )
+    .join("");
+  const html = `
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>Transcriptions</title>
+        </head>
+        <body
+            <h1>Transcriptions</h1>
+            ${transcriptionElements}
+        </body>
+    </html>
+    `;
+  res.send(html);
+});
 
 // Routes
 app.post("/api/transcription", async (req, res) => {
