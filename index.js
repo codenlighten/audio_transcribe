@@ -43,7 +43,11 @@ async function getTranscriptions() {
   try {
     const db = client.db(dbName);
     const collection = db.collection("transcriptions");
-    const transcriptions = await collection.find({}).toArray();
+    //get all transcriptions that are not empty strings
+    const transcriptions = await collection
+      .find({ transcription: { $ne: "" } })
+      .toArray();
+
     console.log("Transcriptions retrieved:", transcriptions);
     return transcriptions;
   } catch (error) {
@@ -55,13 +59,26 @@ async function getTranscriptions() {
 // Routes
 app.post("/api/transcription", async (req, res) => {
   const { timestamp, transcription } = req.body;
+  if (!timestamp || !transcription) {
+    return res
+      .status(400)
+      .json({ error: "Missing timestamp or transcription" });
+  }
+  if (typeof timestamp !== "number" || typeof transcription !== "string") {
+    return res
+      .status(400)
+      .json({ error: "Invalid timestamp or transcription" });
+  }
+  if (transcription.length === 0) {
+    return res.json(newTranscription);
+  }
   const newTranscription = {
     timestamp,
     transcription,
     id: uuidv4(),
   };
   await saveTranscription(newTranscription);
-  res.json(newTranscription);
+  return res.json(newTranscription);
 });
 
 app.get("/api/transcription", async (req, res) => {
