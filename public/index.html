@@ -268,27 +268,6 @@
       // Create a Socket.IO client instance
       const socket = io();
 
-      // Listen for transcriptions event from the server
-      socket.on("transcriptions", (transcriptions) => {
-        const liveTranscriptions =
-          document.getElementById("liveTranscriptions");
-        liveTranscriptions.innerHTML = ""; // Clear previous transcriptions
-        liveTranscriptions.innerText = transcriptions;
-      });
-      socket.on("transcriptionUpdate", (newTranscription) => {
-        // Update your UI with the new transcription
-        const liveTranscriptions =
-          document.getElementById("liveTranscriptions");
-        // Append or update the transcription in your UI
-        liveTranscriptions.innerHTML += `<div>${newTranscription.transcription}</div>`;
-      });
-
-      // Function to fetch live transcriptions based on sessionId
-      function getLiveTranscriptions(sessionId) {
-        // Emit an event to the server to fetch live transcriptions for the provided sessionId
-        socket.emit(sessionId);
-      }
-
       // Function to handle the click event of the start button
       document.getElementById("start").addEventListener("click", () => {
         const sessionId = document.getElementById("sessionId").value;
@@ -322,7 +301,26 @@
             },
           });
 
-          // Rest of the socket event listeners here...
+          // Listen for transcriptions event from the server
+          socket.on("transcriptions", (transcriptions) => {
+            const liveTranscriptions =
+              document.getElementById("liveTranscriptions");
+            liveTranscriptions.innerHTML = ""; // Clear previous transcriptions
+            liveTranscriptions.innerText = transcriptions;
+          });
+          socket.on("transcriptionUpdate", (newTranscription) => {
+            // Update your UI with the new transcription
+            const liveTranscriptions =
+              document.getElementById("liveTranscriptions");
+            // Append or update the transcription in your UI
+            liveTranscriptions.innerHTML += `<div>${newTranscription.transcription}</div>`;
+          });
+
+          // Function to fetch live transcriptions based on sessionId
+          function getLiveTranscriptions(sessionId) {
+            // Emit an event to the server to fetch live transcriptions for the provided sessionId
+            socket.emit(sessionId);
+          }
         });
     </script>
   </body>
