@@ -67,21 +67,38 @@ async function getTranscriptions() {
       .find({ transcription: { $ne: "" } })
       .toArray();
     // If encrypted is true, decrypt the transcription
-    transcriptions = transcriptions.map((transcription) => {
-      if (transcription.encrypted) {
-        // You need to implement the decrypt function according to your encryption logic
-        return {
-          ...transcription,
-          transcription: decrypt(transcription.transcription),
-        };
+    const decryptedTranscriptions = [];
+    transcriptions.forEach((t) => {
+      if (t.encrypted) {
+        t.transcription = decrypt(t.transcription);
+        t.encrypted = false;
       }
-      return transcription; // Return the original transcription if not encrypted
+      decryptedTranscriptions.push(t);
     });
-    console.log("Transcriptions retrieved:", transcriptions);
-    return transcriptions;
+    console.log("Transcriptions retrieved:", decryptedTranscriptions);
+    return decryptedTranscriptions;
   } catch (error) {
     console.error("Failed to get transcriptions:", error);
     return [];
+  }
+}
+
+async function getTranscriptionById(id) {
+  try {
+    const db = client.db(dbName);
+    const collection = db.collection("transcriptions");
+    const transcription = await collection.findOne({
+      id,
+    });
+    if (transcription.encrypted) {
+      transcription.transcription = decrypt(transcription.transcription);
+      transcription.encrypted = false;
+    }
+    console.log("Transcription retrieved:", transcription);
+    return transcription;
+  } catch (error) {
+    console.error("Failed to get transcription:", error);
+    return null;
   }
 }
 
@@ -99,7 +116,6 @@ io.on("connection", (socket) => {
   console.log("A user connected");
   const sessionId = socket.handshake.query.sessionId;
   let liveCheckInterval;
-  let liveTranscription = "";
   if (sessionId) {
     socket.join(sessionId);
 
@@ -162,7 +178,13 @@ app.post("/api/transcription", async (req, res) => {
     sessionName,
     encrypted: true,
   };
-  currentTranscriptions.push(newTranscription);
+  currentTranscriptions.push({
+    timestamp,
+    transcription,
+    id,
+    sessionName,
+    encrypted: true,
+  });
   await saveTranscription(newTranscription);
 
   // Emit the update to all clients in the session
