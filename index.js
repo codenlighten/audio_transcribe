@@ -54,7 +54,39 @@ async function getTranscriptions() {
     return [];
   }
 }
-
+// <!DOCTYPE html>
+// <html lang="en">
+//   <head>
+//     <meta charset="UTF-8" />
+//     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+//     <title>Document</title>
+//     <style>
+//       body {
+//         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+//         text-align: center;
+//       }
+//       h1 {
+//         color: #333;
+//       }
+//       .transcription {
+//         margin: 20px auto;
+//         padding: 20px;
+//         font-size: 16px;
+//         border: 1px solid #ccc;
+//         width: 80%;
+//         min-height: 100px;
+//         overflow-wrap: break-word;
+//       }
+//     </style>
+//   </head>
+//   <body>
+//     <h1>Audio Transcribe</h1>
+//     <div id="transcriptions">
+//       <h2>Previous Transcriptions</h2>
+//       <p class="transcription"></p>
+//     </div>
+//   </body>
+// </html>
 //turn each transcription into a html element and return as a html page
 app.get("/transcriptions", async (req, res) => {
   const transcriptions = await getTranscriptions();
@@ -66,14 +98,37 @@ app.get("/transcriptions", async (req, res) => {
     .join("");
   const html = `
     <!DOCTYPE html>
-    <html>
-        <head>
-            <title>Transcriptions</title>
-        </head>
-        <body
-            <h1>Transcriptions</h1>
-            ${transcriptionElements}
-        </body>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <style>
+          body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+          }
+          h1 {
+            color: #333;
+          }
+          .transcription {
+            margin: 20px auto;
+            padding: 20px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            width: 80%;
+            min-height: 100px;
+            overflow-wrap: break-word;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Audio Transcribe</h1>
+        <div id="transcriptions">
+          <h2>Previous Transcriptions</h2>
+          <div class="transcription">${transcriptionElements}</div>
+        </div>
+      </body>
     </html>
     `;
   res.send(html);
