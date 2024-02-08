@@ -66,6 +66,29 @@ const getCurrentTranscriptions = async () => {
 };
 getCurrentTranscriptions();
 // Routes
+
+// Socket.IO server
+const io = new Server(server);
+// Socket.IO logic
+io.on("connection", async (socket) => {
+  console.log("A user connected");
+  // Join a room based on the sessionName provided by the client
+  const { sessionId } = socket.handshake.query;
+  socket.join(sessionId);
+
+  // Send existing transcriptions for the session to the connected client
+  const filteredTranscriptions = currentTranscriptions.filter(
+    (transcription) => transcription.sessionName === sessionId
+  );
+  const lastTranscription =
+    filteredTranscriptions[filteredTranscriptions.length - 1];
+  socket.emit("transcriptions", lastTranscription);
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
+  });
+});
+
 app.post("/api/transcription", async (req, res) => {
   const { timestamp, transcription, id, sessionName } = req.body;
   if (!timestamp || !transcription || !id || !sessionName) {
@@ -88,8 +111,8 @@ app.post("/api/transcription", async (req, res) => {
   currentTranscriptions.push(newTranscription);
   await saveTranscription(newTranscription);
 
-  // Emit the new transcription to all connected clients in the same session
-  io.to(sessionName).emit("newTranscription", currentTranscriptions);
+  // Emit the update to all clients in the session
+  io.to(sessionName).emit("transcriptionUpdate", newTranscription);
 
   return res.json(newTranscription);
 });
@@ -98,28 +121,6 @@ app.get("/api/transcription/session/:sessionId", async (req, res) => {
   const { sessionId } = req.params;
   const transcriptions = await getTranscriptionsBySession(sessionId);
   res.json(transcriptions);
-});
-
-// Socket.IO server
-const io = new Server(server);
-// Socket.IO logic
-io.on("connection", async (socket) => {
-  console.log("A user connected");
-  // Join a room based on the sessionName provided by the client
-  const { sessionId } = socket.handshake.query;
-  socket.join(sessionId);
-
-  // Send existing transcriptions for the session to the connected client
-  const filteredTranscriptions = currentTranscriptions.filter(
-    (transcription) => transcription.sessionName === sessionId
-  );
-  const lastTranscription =
-    filteredTranscriptions[filteredTranscriptions.length - 1];
-  socket.emit("transcriptions", lastTranscription);
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
-  });
 });
 
 // Function to fetch transcriptions by sessionName
