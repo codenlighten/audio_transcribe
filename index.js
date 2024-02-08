@@ -2,6 +2,10 @@ require("dotenv").config();
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static("public")); // Serve your static HTML file
 const port = process.env.PORT || 3000;
 // mongodb
 const mongoUri = process.env.MONGO_URI;
@@ -42,10 +46,6 @@ const getTranscription = () => {
     }
   });
 };
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public")); // Serve your static HTML file
 
 app.post("/api/transcription", (req, res) => {
   const { timestamp, transcription } = req.body;
