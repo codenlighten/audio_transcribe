@@ -64,14 +64,16 @@
       let id = localStorage.getItem("address");
       let currentDateTimestamp = new Date().getTime();
       let currentTranscription = "";
-      let sessionName = document.getElementById("sessionName").value;
+      let sessionName = document.getElementById("sessionName");
+      const date = new Date();
+      sessionName.value = `Session-${date.toISOString()}`;
       const sendTranscription = (transcription) => {
         if (transcription === "") {
           return;
         }
-        if (sessionName === "") {
+        if (sessionName.value === "") {
           const date = new Date();
-          sessionName = `Session-${date.toISOString()}`;
+          sessionName.value = `Session-${date.toISOString()}`;
         }
         fetch("/api/transcription", {
           method: "POST",
@@ -80,7 +82,7 @@
           },
           body: JSON.stringify({
             id: id,
-            sessionName: sessionName,
+            sessionName: sessionName.value,
             transcription: transcription,
             timestamp: currentDateTimestamp,
           }),
