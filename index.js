@@ -183,7 +183,7 @@ app.post("/api/transcription", async (req, res) => {
     transcription,
     id,
     sessionName,
-    encrypted: true,
+    encrypted: false,
   });
   await saveTranscription(newTranscription);
 
