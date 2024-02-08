@@ -56,23 +56,26 @@ async function saveTranscription(transcription) {
     console.error("Failed to save transcription:", error);
   }
 }
+let currentTranscriptionsLength = 0;
 
 async function getTranscriptions() {
   try {
     const db = client.db(dbName);
     const collection = db.collection("transcriptions");
-    //get all transcriptions that are not empty strings
-    const transcriptions = await collection
+    // Get all transcriptions that are not empty strings
+    let transcriptions = await collection
       .find({ transcription: { $ne: "" } })
       .toArray();
-    //   if encrypted is true, decrypt the transcription
-    transcriptions.map((transcription) => {
+    // If encrypted is true, decrypt the transcription
+    transcriptions = transcriptions.map((transcription) => {
       if (transcription.encrypted) {
+        // You need to implement the decrypt function according to your encryption logic
         return {
           ...transcription,
-          transcription: decrypt,
+          transcription: decrypt(transcription.transcription),
         };
       }
+      return transcription; // Return the original transcription if not encrypted
     });
     console.log("Transcriptions retrieved:", transcriptions);
     return transcriptions;
@@ -85,32 +88,59 @@ async function getTranscriptions() {
 let currentTranscriptions = [];
 const getCurrentTranscriptions = async () => {
   currentTranscriptions = await getTranscriptions();
+  currentTranscriptionsLength = currentTranscriptions.length;
 };
 getCurrentTranscriptions();
 // Routes
-
-// Socket.IO server
+const checkLengthsArray = [];
 const io = new Server(server);
-// Socket.IO logic
-io.on("connection", async (socket) => {
+
+io.on("connection", (socket) => {
   console.log("A user connected");
-  // Join a room based on the sessionName provided by the client
-  const { sessionId } = socket.handshake.query;
-  socket.join(sessionId);
+  const sessionId = socket.handshake.query.sessionId;
+  let liveCheckInterval;
+  let liveTranscription = "";
+  if (sessionId) {
+    socket.join(sessionId);
 
-  // Send existing transcriptions for the session to the connected client
-  const filteredTranscriptions = currentTranscriptions.filter(
-    (transcription) => transcription.sessionName === sessionId
-  );
-  const lastTranscription =
-    filteredTranscriptions[filteredTranscriptions.length - 1];
-  socket.emit("transcriptions", lastTranscription);
+    const filteredTranscriptions = currentTranscriptions.filter(
+      (t) => t.sessionId === sessionId
+    );
+    //add sessionId and length of transcriptions to checkLengthsArray
+    checkLengthsArray.push({
+      sessionId,
+      length: filteredTranscriptions.length,
+    });
 
+    socket.emit("transcriptions", filteredTranscriptions); // Emit filtered transcriptions to the client
+  }
+
+  // Handle an event to fetch live transcription
+  socket.on("requestLiveTranscription", () => {
+    liveCheckInterval = setInterval(() => {
+      if (currentTranscriptions.length > currentTranscriptionsLength) {
+        const newTranscriptions = currentTranscriptions.slice(
+          currentTranscriptionsLength
+        );
+        currentTranscriptionsLength = currentTranscriptions.length;
+        socket.emit("liveTranscriptionUpdate", newTranscriptions);
+      }
+    }, 1000);
+  });
   socket.on("disconnect", () => {
     console.log("User disconnected");
+    // if all clients with the same sessionId are disconnected, clear the interval
+    if (sessionId) {
+      const index = checkLengthsArray.findIndex(
+        (c) => c.sessionId === sessionId
+      );
+      checkLengthsArray.splice(index, 1);
+    }
+    if (checkLengthsArray.every((c) => c.length === 0)) {
+      clearInterval(liveCheckInterval);
+    }
   });
 });
-
 app.post("/api/transcription", async (req, res) => {
   const { timestamp, transcription, id, sessionName } = req.body;
   if (!timestamp || !transcription || !id || !sessionName) {

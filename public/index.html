@@ -311,12 +311,18 @@
 
       // Event listener for the getLiveTranscriptions button
       document
-        .getElementById("getLiveTranscriptions")
+        .getElementById("liveTranscriptionBtn")
         .addEventListener("click", () => {
           // Get the session ID from the input field
           const sessionId = document.getElementById("sessionId").value;
-          // Call the function to get live transcriptions
-          getLiveTranscriptions(sessionId);
+          // Make sure we are connecting with the session id
+          const socket = io({
+            query: {
+              sessionId: sessionId, // Send session ID when establishing connection
+            },
+          });
+
+          // Rest of the socket event listeners here...
         });
     </script>
   </body>
