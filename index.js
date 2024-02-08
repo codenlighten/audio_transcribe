@@ -94,6 +94,10 @@ app.post("/api/transcription", async (req, res) => {
   return res.json(newTranscription);
 });
 
+app.get("/api/transcription", async (req, res) => {
+  res.json(currentTranscriptions);
+});
+
 // Socket.IO server
 const io = new Server(server);
 
