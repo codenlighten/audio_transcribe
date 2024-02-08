@@ -313,7 +313,7 @@
             const liveTranscriptions =
               document.getElementById("liveTranscriptions");
             // Append or update the transcription in your UI
-            liveTranscriptions.innerHTML += `<div>${newTranscription.transcription}</div>`;
+            liveTranscriptions.innerHTML = `<div>${newTranscription.transcription}</div>`;
           });
 
           // Function to fetch live transcriptions based on sessionId
