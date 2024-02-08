@@ -274,13 +274,6 @@
           document.getElementById("liveTranscriptions");
         liveTranscriptions.innerHTML = ""; // Clear previous transcriptions
         liveTranscriptions.innerText = transcriptions;
-        // transcriptions.forEach((transcription) => {
-        //   const transcriptionDiv = document.createElement("div");
-        //   transcriptionDiv.innerText = `${new Date(
-        //     transcription.timestamp
-        //   ).toLocaleString()}: ${transcription.transcription}`;
-        //   liveTranscriptions.appendChild(transcriptionDiv);
-        // });
       });
 
       // Function to fetch live transcriptions based on sessionId

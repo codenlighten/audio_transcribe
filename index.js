@@ -60,8 +60,11 @@ async function getTranscriptions() {
   }
 }
 
-let transcriptions = [];
-transcriptions = getTranscriptions();
+let currentTranscriptions = [];
+const getCurrentTranscriptions = async () => {
+  currentTranscriptions = await getTranscriptions();
+};
+getCurrentTranscriptions();
 // Routes
 app.post("/api/transcription", async (req, res) => {
   const { timestamp, transcription, id, sessionName } = req.body;
@@ -82,11 +85,11 @@ app.post("/api/transcription", async (req, res) => {
     id,
     sessionName,
   };
-  transcriptions.push(newTranscription);
+  currentTranscriptions.push(newTranscription);
   await saveTranscription(newTranscription);
 
   // Emit the new transcription to all connected clients in the same session
-  io.to(sessionName).emit("newTranscription", newTranscription);
+  io.to(sessionName).emit("newTranscription", currentTranscriptions);
 
   return res.json(newTranscription);
 });
@@ -103,7 +106,7 @@ io.on("connection", async (socket) => {
   socket.join(sessionId);
 
   // Send existing transcriptions for the session to the connected client
-  const filteredTranscriptions = transcriptions.filter(
+  const filteredTranscriptions = currentTranscriptions.filter(
     (transcription) => transcription.sessionName === sessionId
   );
   const lastTranscription =
