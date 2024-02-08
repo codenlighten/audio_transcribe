@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audio Transcribe</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
+      }
+      h1 {
+        color: #333;
+      }
+      button {
+        margin: 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 5px;
+        background-color: #4caf50;
+        color: white;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #transcription {
+        margin: 20px auto;
+        padding: 20px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        width: 80%;
+        min-height: 100px;
+        overflow-wrap: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Audio Transcribe</h1>
+    <button id="start">Start</button>
+    <button id="stop">Stop</button>
+    <button id="stopSave">Stop & Save</button>
+    <!-- Transcription results -->
+    <div id="transcription"></div>
+    <!-- Save transcription locally -->
+    <script>
+      let currentDateTimestamp = new Date().getTime();
+      let currentTranscription = "";
+      const sendTranscription = (transcription) => {
+        fetch("/api/transcription", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            transcription: transcription,
+            timestamp: currentDateTimestamp,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("Success:", data);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      };
+      let recording = false;
+      // Check for browser support of speech recognition
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      const startButton = document.getElementById("start");
+      const stopButton = document.getElementById("stop");
+      const stopSaveButton = document.getElementById("stopSave");
+      const transcription = document.getElementById("transcription");
+
+      if (!SpeechRecognition) {
+        transcription.innerText =
+          "Speech Recognition is not supported in your browser. Please use Chrome desktop for better experience.";
+      } else {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true; // Keep processing input until stopped
+        recognition.interimResults = true; // Show results that are not yet final
+        recognition.lang = "en-US";
+
+        // Handle the onresult event
+        recognition.onresult = (event) => {
+          const current = event.resultIndex;
+          const transcript = event.results[current][0].transcript;
+          transcription.textContent += transcript;
+          currentTranscription += transcript;
+        };
+
+        recognition.onend = () => {
+          transcription.textContent += " [Transcription stopped]";
+        };
+
+        recognition.onerror = (event) => {
+          transcription.textContent = `Error occurred in recognition: ${event.error}`;
+        };
+
+        startButton.addEventListener("click", () => {
+          transcription.textContent = "";
+          currentTranscription = "";
+          currentDateTimestamp = new Date().getTime();
+          recording = true;
+          recognition.start();
+        });
+
+        stopButton.addEventListener("click", () => {
+          recording = false;
+          sendTranscription(currentTranscription);
+          recognition.stop();
+        });
+
+        // Function to save text to file
+        function saveTextAsFile(text, filename) {
+          const blob = new Blob([text], { type: "text/plain" });
+          const anchor = document.createElement("a");
+          anchor.download = filename;
+          anchor.href = window.URL.createObjectURL(blob);
+          anchor.click();
+          window.URL.revokeObjectURL(anchor.href);
+        }
+
+        // Combined stop and save functionality
+        stopSaveButton.addEventListener("click", () => {
+          recognition.stop();
+          saveTextAsFile(transcription.textContent, "transcription.txt");
+        });
+      }
+
+      //if recording is true, send the transcription to the server every 5 seconds
+      setInterval(() => {
+        if (recording) {
+          sendTranscription(currentTranscription);
+          currentTranscription = "";
+        }
+      }, 5000);
+    </script>
+  </body>
+</html>
