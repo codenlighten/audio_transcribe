@@ -59,6 +59,9 @@ async function getTranscriptions() {
     return [];
   }
 }
+
+let transcriptions = [];
+transcriptions = getTranscriptions();
 // Routes
 app.post("/api/transcription", async (req, res) => {
   const { timestamp, transcription, id, sessionName } = req.body;
@@ -79,6 +82,7 @@ app.post("/api/transcription", async (req, res) => {
     id,
     sessionName,
   };
+  transcriptions.push(newTranscription);
   await saveTranscription(newTranscription);
 
   // Emit the new transcription to all connected clients in the same session
@@ -99,8 +103,11 @@ io.on("connection", async (socket) => {
   socket.join(sessionName);
 
   // Send existing transcriptions for the session to the connected client
-  const transcriptions = await getTranscriptionsBySession(sessionName);
-  socket.emit("transcriptions", transcriptions);
+  const transcriptions = transcriptions.filter(
+    (transcription) => transcription.sessionName === sessionName
+  );
+  const lastTranscription = transcriptions[transcriptions.length - 1];
+  socket.emit("transcriptions", lastTranscription);
 
   socket.on("disconnect", () => {
     console.log("User disconnected");
