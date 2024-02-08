@@ -286,7 +286,7 @@
       // Function to fetch live transcriptions based on sessionId
       function getLiveTranscriptions(sessionId) {
         // Emit an event to the server to fetch live transcriptions for the provided sessionId
-        socket.emit("getLiveTranscriptions", sessionId);
+        socket.emit(sessionId);
       }
 
       // Function to handle the click event of the start button
