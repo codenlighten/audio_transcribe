@@ -128,6 +128,13 @@ io.on("connection", (socket) => {
     });
     // Emit all transcriptions for the session
     filteredTranscriptions.forEach((transcription) => {
+      // check if the transcription is encrypted
+      if (transcription.encrypted) {
+        transcription.transcription = decrypt
+          ? transcription.transcription
+          : transcription.transcription;
+        transcription.encrypted = false;
+      }
       socket.emit("liveTranscriptionUpdate", transcription);
     });
   }
