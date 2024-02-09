@@ -316,6 +316,15 @@
             liveTranscriptions.prepend(p);
           });
         });
+
+      //url params live transcription
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get("sessionId");
+      if (sessionId) {
+        document.getElementById("sessionId").value = sessionId;
+        getLiveTranscriptions(sessionId);
+      }
+      // Function to get live transcriptions
     </script>
   </body>
 </html>
