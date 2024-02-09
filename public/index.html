@@ -183,8 +183,9 @@
 
         recognition.onend = () => {
           transcription.textContent += " [Transcription stopped]";
-
-          startButton.click();
+          if (recording) {
+            startButton.click();
+          }
         };
 
         recognition.onerror = (event) => {
