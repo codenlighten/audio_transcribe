@@ -302,25 +302,19 @@
           });
 
           // Listen for transcriptions event from the server
-          socket.on("transcriptions", (transcriptions) => {
+          socket.on("liveTranscriptionUpdate", (transcriptions) => {
             const liveTranscriptions =
               document.getElementById("liveTranscriptions");
             liveTranscriptions.innerHTML = ""; // Clear previous transcriptions
-            liveTranscriptions.innerText = transcriptions;
+            transcriptions.forEach((transcription) => {
+              // Append or update the transcription in your UI
+              //wait 2 seconds before appending the transcription
+              setTimeout(() => {
+                liveTranscriptions.innerHTML = `<div>${transcription.transcription}</div>`;
+              }, 2000);
+              liveTranscriptions.innerHTML = `<div>${transcription.transcription}</div>`;
+            });
           });
-          socket.on("transcriptionUpdate", (newTranscription) => {
-            // Update your UI with the new transcription
-            const liveTranscriptions =
-              document.getElementById("liveTranscriptions");
-            // Append or update the transcription in your UI
-            liveTranscriptions.innerHTML = `<div>${newTranscription.transcription}</div>`;
-          });
-
-          // Function to fetch live transcriptions based on sessionId
-          function getLiveTranscriptions(sessionId) {
-            // Emit an event to the server to fetch live transcriptions for the provided sessionId
-            socket.emit(sessionId);
-          }
         });
     </script>
   </body>

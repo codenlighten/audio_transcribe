@@ -128,7 +128,7 @@ io.on("connection", (socket) => {
     });
     // Emit all transcriptions for the session
     filteredTranscriptions.forEach((transcription) => {
-      socket.emit("liveTranscriptionUpdate", transcription);
+      socket.emit("transcriptionUpdate", transcription);
     });
   }
   // Handle an event to fetch live transcription
@@ -139,7 +139,6 @@ io.on("connection", (socket) => {
         const newTranscriptions = currentTranscriptions.slice(
           currentTranscriptionsLength
         );
-        currentTranscriptionsLength = currentTranscriptions.length;
 
         // Decrypt each new transcription before emitting
         const decryptedUpdates = [];
@@ -152,9 +151,8 @@ io.on("connection", (socket) => {
         });
 
         // Emit the new transcriptions to the client
-        decryptedUpdates.forEach((t) => {
-          socket.emit("liveTranscriptionUpdate", t);
-        });
+        socket.emit("liveTranscriptionUpdate", decryptedUpdates);
+        currentTranscriptionsLength = currentTranscriptions.length;
       }
     }, 1000);
   });
@@ -196,15 +194,10 @@ app.post("/api/transcription", async (req, res) => {
     encrypted: true,
   };
   currentTranscriptions.push(newTranscription);
-  const unencryptedTranscription = {
-    ...newTranscription,
-    transcription,
-    encrypted: false,
-  };
   await saveTranscription(newTranscription);
 
   // Emit the update to all clients in the session
-  io.to(sessionName).emit("liveTranscriptionUpdate", unencryptedTranscription);
+  io.to(sessionName).emit("transcriptionUpdate", newTranscription);
 
   return res.json(newTranscription);
 });
