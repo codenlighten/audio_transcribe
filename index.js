@@ -130,9 +130,7 @@ io.on("connection", (socket) => {
     filteredTranscriptions.forEach((transcription) => {
       // check if the transcription is encrypted
       if (transcription.encrypted) {
-        transcription.transcription = decrypt
-          ? transcription.transcription
-          : transcription.transcription;
+        transcription.transcription = decrypt(transcription.transcription);
         transcription.encrypted = false;
       }
       socket.emit("liveTranscriptionUpdate", transcription);
