@@ -324,7 +324,10 @@
       const sessionId = urlParams.get("sessionId");
       if (sessionId) {
         document.getElementById("sessionId").value = sessionId;
-        getLiveTranscriptions(sessionId);
+        const liveTranscriptionBtn = document.getElementById(
+          "liveTranscriptionBtn"
+        );
+        liveTranscriptionBtn.click();
         // focus on the transcription div
         document.getElementById("liveTranscriptions").scrollIntoView();
         alert("You are now connected to the live transcription session");
