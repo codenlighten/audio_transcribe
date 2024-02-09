@@ -323,6 +323,9 @@
       if (sessionId) {
         document.getElementById("sessionId").value = sessionId;
         getLiveTranscriptions(sessionId);
+        // focus on the transcription div
+        document.getElementById("liveTranscriptions").scrollIntoView();
+        alert("You are now connected to the live transcription session");
       }
       // Function to get live transcriptions
     </script>
