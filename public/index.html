@@ -188,7 +188,7 @@
         recognition.onerror = (event) => {
           transcription.textContent = `Error occurred in recognition: ${event.error}`;
           //restart the recognition
-          recognition.start();
+          startButton.click();
         };
 
         startButton.addEventListener("click", () => {
