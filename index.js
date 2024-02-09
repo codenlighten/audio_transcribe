@@ -129,10 +129,10 @@ io.on("connection", (socket) => {
     // Emit all transcriptions for the session
     filteredTranscriptions.forEach((transcription) => {
       // check if the transcription is encrypted
-      if (transcription.encrypted) {
-        transcription.transcription = decrypt(transcription.transcription);
-        transcription.encrypted = false;
-      }
+      // if (transcription.encrypted) {
+      //   transcription.transcription = decrypt(transcription.transcription);
+      //   transcription.encrypted = false;
+      // }
       socket.emit("liveTranscriptionUpdate", transcription);
     });
   }
@@ -248,15 +248,6 @@ app.get("/api/transcription", async (req, res) => {
 app.get("/api/transcription/:id", async (req, res) => {
   const { id } = req.params;
   const transcription = await getTranscriptionById(id);
-  if (!transcription) {
-    return res.status(404).json({ error: "Transcription not found" });
-  }
-  res.json(transcription);
-});
-
-app.get("/api/transcription/session/:sessionId", async (req, res) => {
-  const { sessionId } = req.params;
-  const transcription = await getTranscriptionBySessionId(sessionId);
   if (!transcription) {
     return res.status(404).json({ error: "Transcription not found" });
   }
